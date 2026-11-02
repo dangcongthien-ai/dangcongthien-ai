@@ -1,0 +1,17 @@
+{
+  "type": "normal",
+  "fileName": "profile-professional.svg",
+  "backgroundColor": "#0D1117",
+  "foregroundColor": "#E6EDF3",
+  "strongColor": "#FB923C",
+  "weakColor": "#8B949E",
+  "radarColor": "#38BDF8",
+  "growingAnimation": false,
+  "contribColors": [
+    "#21262D",
+    "#164E63",
+    "#0284C7",
+    "#F97316",
+    "#EF4444"
+  ]
+}

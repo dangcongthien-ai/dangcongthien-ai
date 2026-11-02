@@ -1,0 +1,60 @@
+name: Update profile visuals
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 02:17 in Vietnam (UTC+7)
+    - cron: "17 19 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-profile-visuals
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out profile repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate GitHub stats, streak and activity graph
+        env:
+          GH_TOKEN: ${{ secrets.PROFILE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_USER: ${{ github.repository_owner }}
+        run: python scripts/generate_profile_cards.py
+
+      - name: Generate professional composite 3D contributions
+        uses: yoshi389111/github-profile-3d-contrib@7d95e7d4cdc028dd1e1cbd957d65f35efb12ae39 # verified latest revision
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROFILE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
+          SETTING_JSON: conf/profile-3d.json
+
+      - name: Add actual repository language bytes (public or private)
+        env:
+          GH_TOKEN: ${{ secrets.PROFILE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_USER: ${{ github.repository_owner }}
+          INCLUDE_PRIVATE: ${{ secrets.PROFILE_READ_TOKEN != '' }}
+        run: python scripts/update_language_donut.py
+
+      - name: Validate generated assets
+        run: python scripts/validate_profile.py --require-full-3d
+
+      - name: Commit updated images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/stats.svg assets/streak.svg assets/activity.svg profile-3d-contrib/profile-professional.svg
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update profile charts"
+            git push
+          fi
